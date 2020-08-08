@@ -1,5 +1,4 @@
 import { Construct } from 'constructs';
-import { Token } from 'cdktf';
 import { DataAwsAmi, DataAwsAvailabilityZones as AZ } from '../.gen/providers/aws'
 // import { Ec2Instance } from './.gen/modules/terraform-aws-modules/ec2-instance/aws';
 import { Vpc } from '../.gen/modules/terraform-aws-modules/vpc/aws';
@@ -15,8 +14,6 @@ export interface VpcBaseProps {
 }
 
 export class VpcProvider extends Construct{
-  readonly privateSubnets: string[]
-  readonly publicSubnets?: string[];
   readonly vpc: Vpc;
 
   static getOrCreate(scope: Construct) {
@@ -33,10 +30,26 @@ export class VpcProvider extends Construct{
       enableNatGateway: props.enableNatGateway ?? true,
       singleNatGateway: props.singleNatGateway ?? true,
     })
-    
-    this.publicSubnets = Token.asList(this.vpc.publicSubnetsOutput)
-    this.privateSubnets = Token.asList(this.vpc.privateSubnetsOutput)
+  }
 
+  public get privateSubnets(): string[] {
+    return this.vpc.privateSubnetsOutput as unknown as string[]
+  }
+
+  public get publicSubnets(): string[] {
+    return this.vpc.publicSubnetsOutput as unknown as string[]
+  }
+
+  public privateSubnet(index: number): string {
+    return this.elementFromList(this.privateSubnets, index)
+  }
+
+  public publicSubnet(index: number): string {
+    return this.elementFromList(this.publicSubnets, index)
+  }
+
+  private elementFromList(attribute: string[], index: number): string {
+    return `\${element("${attribute}", ${index})}`
   }
 }
 
